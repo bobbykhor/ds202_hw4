@@ -1,0 +1,98 @@
+---
+title: "Homework #4"
+author: "Yi Hang Khor; bobbykhor"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(datasets)
+library(dplyr)
+library(ggplot2)
+data <- ChickWeight
+```
+
+## Chick weights
+
+1. Get a frequency breakdown of the number of chicks, their average weight and the standard deviation of the weights in each of the diets at the start of the study. Store the resulting data frame in a variable named weight0 and print.
+```{r}
+weight0 <- data %>%
+ group_by(Diet) %>%
+ summarise(NumChicks = n()%/%12 ,average_weight = mean(weight),sd_weight = sd(weight))
+weight0
+```
+
+2. Each chick should have twelve weight measurements. Use the dplyr package to identify how many measurements are there for each chick. Extract a subset of the data for all chicks with complete information, name the data set complete, and print the first 3 rows. (Hint: you might want to use mutate to introduce a helper variable consisting of the number of observations)
+```{r}
+complete <- data %>% 
+  group_by(Chick) %>% 
+  mutate(Num = n()) %>% 
+  filter(Num ==12)
+head(complete, n=3)
+```
+
+3.In the complete data set introduce a new variable that measures the current weight difference compared to day 0. Name this variable weightgain and print the first 3 rows of the new data frame.
+```{r}
+complete <- complete %>%
+  group_by(Chick) %>%
+  mutate (weightgain = (weight - weight[Time ==0]))
+head(complete, n=3)
+```
+
+4. Use {ggplot2} to create side-by-side boxplots of weightgain by Diet for day 21. Change the order of the categories in the Diet variable such that the boxplots are ordered by median weightgain, and the lower limit of the y axis should be 0. Describe the relationship in 2-3 sentences.
+```{r}
+day21 <- filter(complete, Time ==21)
+pt1 <- temp <- ggplot(day21,aes(x = reorder(Diet,weightgain,FUN = median),y =weightgain))+geom_boxplot() + expand_limits(y=0) +  xlab("Diet") +ylab("Weight Gain")+ ggtitle("Weight Gain by day 21 ")
+pt1 <- pt1 + theme(plot.title = element_text(hjust=0.5))
+pt1
+```
+
+**According to the boxplot, chicks with diet 3 have the highest median weightgain by day 21. However, chick with diet 1 have the lowest median weightgain by day 21**
+
+5. Answer each of the following questions using numerical and graphical summary. Also explain what you found: (a) Which chick gained the most weight and which gained the least weight? (b) What diets were they on?
+```{r}
+most <- day21 %>% 
+  arrange(desc(weightgain))
+head(most,n=1)
+tail(most,n=1)
+ggplot(most,aes(x = Chick,y =weightgain)) +geom_point()+xlab("Chick")+ylab("Weight Gain")
+```
+
+**Chick 35 has gained the most weight and it was on diet 3. Chick 24 had gained the least weight and it was on diet 2**
+
+6. For the chicks with the least and the most weight at time 0, plot their growth trajectories over time.
+```{r}
+day0 <- complete %>% 
+  filter(Time ==0)%>% arrange(desc(weight))
+head(day0,n=1)
+tail(day0,n=1)
+
+temp1 <- complete %>% 
+  arrange(Time)
+pt2 <-ggplot(complete %>% filter(Chick ==3 | Chick ==48)%>% arrange(Time),aes(x =Time,y =weight ,color =Chick))+geom_line() +ggtitle("Growth Trajectory for chick with the least and the most weight at time 0")
+pt2 <- pt2 + theme(plot.title=element_text(hjust=0.5))
+pt2
+```
+
+7. Add to the previous plot the average growth trajectory for all chicks (calculated as the mean weight for each chick at each time). How do the trajectories compare?
+```{r}
+pt3 <-ggplot(complete%>% arrange(Time),aes(x =Time,y =weight ,color =Chick))+geom_line() +ggtitle("Growth Trajectory for all chicks")
+pt3 <- pt3 + theme(plot.title = element_text(hjust=0.5))
+pt3
+```
+
+**The trajectory is compared by determining the slope of the line. In other words, chick with a steeper slope of growth trajectory has a higher growing rate and chick with a gentler slope of growth trajectory has a lower growing rate.**
+
+8. What else do you find interesting in the dataset? Show your exploratory analysis.
+```{r}
+data8 <- data %>%
+  group_by(Time,Diet) %>%
+  summarise(NumChicks = n()%/%12 ,average_weight = mean(weight),sd_weight = sd(weight))
+  
+
+pt4 <-ggplot(data8%>% arrange(Time),aes(x =Time,y =average_weight ,color =Diet))+geom_line() +ggtitle("Growth Trajectory for each diet")
+pt4 <- pt4 + theme(plot.title = element_text(hjust=0.5))
+pt4
+```
+
+**I am interested in how the diet affects the growth trajectory of the chicks, hence, I created a plot showing the growth trajectory for each diet. I found out that chicks in diet 3 have the steepest growth trajectory when chicks in diet 1 have the most gradual growth trajectory**
